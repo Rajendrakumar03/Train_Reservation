@@ -7,6 +7,9 @@ class User(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    class Meta:
+        verbose_name = "user"
+        db_table = "user"
     
 class Ticket_Model(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
@@ -19,4 +22,7 @@ class Ticket_Model(models.Model):
 
     def __str__(self):
         return f"Ticket_Model #{self.pk} - {self.user} - Section : {self.section} - Seat : {self.seat}"
+    class Meta:
+        verbose_name = "ticket"
+        db_table = "ticket"
 

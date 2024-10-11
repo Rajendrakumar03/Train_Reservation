@@ -77,12 +77,12 @@ WSGI_APPLICATION = 'train_reservation.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'reservation',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
-        'USER': 'root',
-        'PASSWORD': 'raji1996',
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "train_reservation", 
+        "USER": "raji",
+        "PASSWORD": "raji@123",
+        "HOST": "127.0.0.1",
+        "PORT": "",
     }
 }
 

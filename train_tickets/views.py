@@ -82,7 +82,7 @@ class ModifySeatAPI(generics.UpdateAPIView):
         else:
             ticket.seat = new_seat_number
             ticket.save()
-            serializer=self.get_serializer(ticket,data=request.data)
+            serializer=self.get_serializer(ticket,data=request.data,context={"request": request})
             if serializer.is_valid():
                 serializer.save()
 
