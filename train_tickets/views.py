@@ -1,11 +1,23 @@
 from django.shortcuts import render,get_object_or_404
-from rest_framework import generics
+from rest_framework import generics,viewsets
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User,Ticket_Model
-from .serializers import TicketSerializer,UserSerializer,NestedSerializer
+from .serializers import TicketSerializer,UserSerializer
 
-class PurchaseTicketAPI(generics.CreateAPIView):
+
+class Registration(viewsets.ViewSet):
+
+    def post(self,request):
+        data = request.data 
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+        return Response(serializer.data)
+
+
+class PurchaseTicketAPI(viewsets.ViewSet):
     queryset = Ticket_Model.objects.all()
     serializer_class = TicketSerializer
 
@@ -15,77 +27,125 @@ class PurchaseTicketAPI(generics.CreateAPIView):
         return Response(serializer_purchase.data)
     
     def post(self,request,*args,**kwargs):
+        # import pdb;pdb.set_trace()
+        # seat_number = request.data.get('seat')
+        # seat_exists = Ticket_Model.objects.filter(seat=seat_number).exists()
+        # if seat_exists:
+        #     return Response({'message': f"Seat {seat_number} is already booked."},status=status.HTTP_400_BAD_REQUEST)
+        
+        # serializer = TicketSerializer(data=request.data)
+        # if serializer.is_valid():
+        #     serializer.save()
+        #     return Response(serializer.data,status=status.HTTP_201_CREATED)
+        # return Response(serializer.errors,status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data 
         seat_number = request.data.get('seat')
         seat_exists = Ticket_Model.objects.filter(seat=seat_number).exists()
         if seat_exists:
             return Response({'message': f"Seat {seat_number} is already booked."},status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = TicketSerializer(data=request.data)
+        serializer = TicketSerializer(data=data)        
         if serializer.is_valid():
             serializer.save()
+
             return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-class ReceiptDetailAPI(generics.RetrieveAPIView):
-    serializer_class = TicketSerializer
-    lookup_field = 'user__email'
+class ReceiptDetailAPI(viewsets.ViewSet):
 
-    def get_object(self):
-        user_email = self.kwargs.get('email')
+    def get(self,request):
+        user_email = request.GET.get('email')
+        email_check = User.objects.filter(email=user_email).values('id')
 
-        try:
-            user = User.objects.get(email=user_email)
-            ticket = Ticket_Model.objects.get(user__email=user_email)
-            return ticket
-        except (Ticket_Model.DoesNotExist):
-            return 'nill'
+        if email_check:
+
+            ticket = Ticket_Model.objects.filter(user__in = email_check)
+            if ticket:
+                return Response(ticket)
+            else:
+                return Response({'message':'User does not have tickets'})
+        else:
+            return Response({'message': 'User not found'})
+
+        # ticket = Ticket_Model.objects.filter(user__in =email_check)
+
+        # try:
+        #     user = User.objects.get(email=user_email)
+        #     ticket = Ticket_Model.objects.get(user__email=user_email)
+        #     return ticket
+        # except (Ticket_Model.DoesNotExist):
+        #     return 'nill'
             
     
-class UserBySectionAPI(generics.ListAPIView):
-    serializer_class = TicketSerializer
+class UserBySectionAPI(viewsets.ViewSet):
+    # serializer_class = TicketSerializer
 
-    def get_queryset(self):
-        section = self.kwargs.get('section')
-        return Ticket_Model.objects.filter(section=section)
+    def get(self,request):
+
+        section = request.GET.get('section')
+        ticket = Ticket_Model.objects.filter(section__in=section)
+        serilaizer = TicketSerializer(ticket,many=True)
+
+        print(serilaizer.data)
+
+        return Response(serilaizer.data)
     
-class RemoveUserAPI(generics.DestroyAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    lookup_field = 'email'
+    def get_all_users(self,request):
+        users_list = User.objects.all()
+        if not users_list.exists():
+            return Response("Users not found")
+        serializer = UserSerializer(users_list,many=True)
+        # print(serializer.data,"*******************")
+        return Response(serializer.data)
+    
+# class RemoveUserAPI(generics.DestroyAPIView):
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
+#     lookup_field = 'email'
 
-    def delete(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()  
-            self.perform_destroy(instance)
-            return Response("User deleted successfully", status=status.HTTP_204_NO_CONTENT)
-        except User.DoesNotExist:
-            return Response("User does not exist", status=status.HTTP_404_NOT_FOUND)
+#     def delete(self, request, *args, **kwargs):
+#         try:
+#             instance = self.get_object()  
+#             self.perform_destroy(instance)
+#             return Response("User deleted successfully", status=status.HTTP_204_NO_CONTENT)
+#         except User.DoesNotExist:
+#             return Response("User does not exist", status=status.HTTP_404_NOT_FOUND)
+
+class RemoveUser(viewsets.ViewSet):
+
+    def destroy(self,request):
+
+        user = request.GET.get('id')
+        if user:
+            delete_user = User.objects.filter(id__in=user).delete()
+            return Response("User deleted Successfully",status=status.HTTP_200_OK)
+        else:
+            return Response("User does not exists")
+
  
 
-class ModifySeatAPI(generics.UpdateAPIView):
-    queryset = Ticket_Model.objects.all()
-    serializer_class = TicketSerializer
-    lookup_field = 'user__email'
+class ModifySeatAPI(viewsets.ViewSet):
 
     def update(self,request,*args,**kwargs):
-        
-        user_email = self.kwargs.get('email')
-    
-        user = User.objects.get(email=user_email)
-        ticket = Ticket_Model.objects.get(user__email=user_email)
-            
-        new_seat_number = request.data.get('seat')
-        seat_exists = Ticket_Model.objects.filter(seat=new_seat_number).exists()
-        if seat_exists:
-            return Response({'message': f"Seat {new_seat_number} is already booked."},status=status.HTTP_400_BAD_REQUEST)
+        user_id = request.GET.get('id')
+        users = User.objects.filter(id=user_id)
+        if not users.exists():
+            return Response("User not found")
         
         else:
-            ticket.seat = new_seat_number
-            ticket.save()
-            serializer=self.get_serializer(ticket,data=request.data,context={"request": request})
-            if serializer.is_valid():
-                serializer.save()
+    
+            ticket = Ticket_Model.objects.filter(user__in=user_id)
+                
+            new_seat_number = request.data.get('seat')
+            seat_exists = Ticket_Model.objects.filter(seat=new_seat_number).exists()
+            if seat_exists:
+                return Response({'message': f"Seat {new_seat_number} is already booked."},status=status.HTTP_400_BAD_REQUEST)
+            
+            else:
+                ticket.seat = new_seat_number
+                new_seat = Ticket_Model.objects.filter(user__in=user_id).update(seat=new_seat_number)
 
-            return Response(serializer.data)
+                return Response("Seat updated Successfully")
     
         
