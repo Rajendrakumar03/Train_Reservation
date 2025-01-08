@@ -1,18 +1,23 @@
 from django.db import models
+from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.models import AbstractUser
 
-class User(models.Model):
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
+
+class User(AbstractUser):
+    username = models.CharField(max_length=50,null=True,blank=True)
     email = models.EmailField(unique=True)
+    contact_number = models.BigIntegerField(default=None,null=True)
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    
     class Meta:
-        verbose_name = "user"
+        verbose_name = "users"
         db_table = "user"
     
 class Ticket_Model(models.Model):
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    user = models.ForeignKey(User,on_delete=models.PROTECT)
     section = models.CharField(max_length=1, choices=(('A','Section A'),('B','Section B')))
     seat = models.IntegerField()
     price_paid = models.IntegerField(default=20)
@@ -20,9 +25,9 @@ class Ticket_Model(models.Model):
     to_location = models.CharField(max_length=50,default='France')
 
 
-    def __str__(self):
-        return f"Ticket_Model #{self.pk} - {self.user} - Section : {self.section} - Seat : {self.seat}"
+    # def __str__(self):
+    #     return f"Ticket_Model #{self.pk} - {self.user} - Section : {self.section} - Seat : {self.seat}"
     class Meta:
-        verbose_name = "ticket"
+        verbose_name = "tickets"
         db_table = "ticket"
 

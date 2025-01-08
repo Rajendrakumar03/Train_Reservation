@@ -4,7 +4,20 @@ from .models import User,Ticket_Model
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['username','password','email','contact_number']
+        extra_kwargs = {
+            'password': {'write_only': True}  # Ensure password is not returned
+        }
+
+    
+    def create(self,validate_data):
+
+        password = validate_data.pop("password")
+        user = super().create(validate_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
 
 # class NestedSerializer(serializers.ModelSerializer):
 

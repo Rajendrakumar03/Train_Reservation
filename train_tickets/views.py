@@ -4,17 +4,42 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import User,Ticket_Model
 from .serializers import TicketSerializer,UserSerializer
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
 
 
 class Registration(viewsets.ViewSet):
 
     def post(self,request):
         data = request.data 
-        serializer = UserSerializer(data=request.data)
+        email = data.get('email')
+        
+        check_email = User.objects.filter(email=email).exists()
+        if check_email == True:
+            return Response("This email_id is already registered")
+        serializer = UserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
 
-        return Response(serializer.data)
+            return Response(serializer.data)
+        return Response(serializer.errors)
+    
+    def login(self,request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+       
+        if not email  or not password :            
+            return Response("Username and password is required.")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response("User does not exists.")
+        
+        if user and check_password(password,user.password):
+            return Response("Successfully logged in.")
+        return Response("Username or password is invalid")
+
 
 
 class PurchaseTicketAPI(viewsets.ViewSet):
@@ -39,11 +64,14 @@ class PurchaseTicketAPI(viewsets.ViewSet):
         #     return Response(serializer.data,status=status.HTTP_201_CREATED)
         # return Response(serializer.errors,status=status.HTTP_404_NOT_FOUND)
 
-        data = request.data 
-        seat_number = request.data.get('seat')
-        seat_exists = Ticket_Model.objects.filter(seat=seat_number).exists()
+        data = request.data
+        # user_id = request.user.id
+
+        seat_number = data['seat']
+        section = data['section']
+        seat_exists = Ticket_Model.objects.filter(seat=seat_number,section=section).exists()
         if seat_exists:
-            return Response({'message': f"Seat {seat_number} is already booked."},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': "This seat is already booked."},status=status.HTTP_400_BAD_REQUEST)
         
         serializer = TicketSerializer(data=data)        
         if serializer.is_valid():
@@ -55,12 +83,13 @@ class PurchaseTicketAPI(viewsets.ViewSet):
 class ReceiptDetailAPI(viewsets.ViewSet):
 
     def get(self,request):
+        # import pdb;pdb.set_trace()
         user_email = request.GET.get('email')
         email_check = User.objects.filter(email=user_email).values('id')
 
         if email_check:
 
-            ticket = Ticket_Model.objects.filter(user__in = email_check)
+            ticket = Ticket_Model.objects.filter(user__in = email_check).values()
             if ticket:
                 return Response(ticket)
             else:

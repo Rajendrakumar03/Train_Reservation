@@ -3,6 +3,7 @@ from .views import PurchaseTicketAPI,ReceiptDetailAPI,UserBySectionAPI,RemoveUse
 
 urlpatterns = [
     path('register/',Registration.as_view({'post':'post'}),name='register'),
+    path('login/',Registration.as_view({'post':'login'}),name='login'),
 
     path('purchase/', PurchaseTicketAPI.as_view({'get':'get','post':'post'}),name='purchase_ticket'),
     path('receipt/',ReceiptDetailAPI.as_view({'get':'get'}),name='receipt_detail'),

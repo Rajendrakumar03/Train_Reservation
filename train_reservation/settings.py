@@ -25,8 +25,11 @@ SECRET_KEY = 'django-insecure-87l@lobt*qt)o&9=_xzs@i5##0lwsq(hbq#53afik_=s%0=3v3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
@@ -39,11 +42,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'train_tickets',
     'rest_framework',
+    'corsheaders',
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+
 ]
+
+AUTH_USER_MODEL = 'train_tickets.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -84,6 +94,12 @@ DATABASES = {
         "HOST": "127.0.0.1",
         "PORT": "",
     }
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
 }
 
 
